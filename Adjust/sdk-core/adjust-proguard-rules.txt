@@ -1,0 +1,123 @@
+-keep class com.osaka.sdk.DeviceInfo**
+-keepclassmembers class com.osaka.sdk.DeviceInfo** {*;}
+-keep class com.osaka.sdk.play.InstallReferrer { *; }
+-keep class com.osaka.sdk.sig.Signer { *; }
+-keep class com.osaka.sdk.imei.Util { *; }
+-keep class com.osaka.sdk.oaid.Util { *; }
+-keep class com.osaka.sdk.samsung.Util { *; }
+-keep class com.osaka.sdk.samsung.clouddev.Util { *; }
+-keep class com.osaka.sdk.xiaomi.Util { *; }
+-keep class com.osaka.sdk.vivo.Util { *; }
+
+-keep class com.google.android.gms.common.ConnectionResult {
+    int SUCCESS;
+}
+-keep class com.google.android.gms.ads.identifier.AdvertisingIdClient {
+    com.google.android.gms.ads.identifier.AdvertisingIdClient$Info getAdvertisingIdInfo(android.content.Context);
+}
+-keep class com.google.android.gms.ads.identifier.AdvertisingIdClient$Info {
+    java.lang.String getId();
+    boolean isLimitAdTrackingEnabled();
+}
+-keep class dalvik.system.VMRuntime {
+    java.lang.String getRuntime();
+}
+-keep class android.os.Build {
+    java.lang.String[] SUPPORTED_ABIS;
+    java.lang.String CPU_ABI;
+}
+-keep class android.content.res.Configuration {
+    android.os.LocaleList getLocales();
+    java.util.Locale locale;
+}
+-keep class android.os.LocaleList {
+    java.util.Locale get(int);
+}
+-keep public class com.android.installreferrer.** { *; }
+
+
+#---------------------------------默认保留区---------------------------------
+#继承activity,application,service,broadcastReceiver,contentprovider....不进行混淆
+-keep public class * extends android.app.Activity
+-keep public class * extends androidx.fragment.app.Fragment
+-keep public class * extends android.app.Application
+-keep public class * extends android.app.Service
+-keep public class * extends android.content.BroadcastReceiver
+-keep public class * extends android.content.ContentProvider
+-keep public class * extends android.app.backup.BackupAgentHelper
+-keep public class * extends android.preference.Preference
+-keep public class * extends android.view.View
+-keep class android.support.** {*;}
+
+# androidx 混淆
+-keep class com.google.android.material.** {*;}
+-keep class androidx.** {*;}
+-keep public class * extends androidx.**
+-keep interface androidx.** {*;}
+-keep class * implements androidx.** {
+    *;
+}
+-dontwarn com.google.android.material.**
+-dontnote com.google.android.material.**
+-dontwarn androidx.**
+-printconfiguration
+# 基于annotation的keep(而非目录)
+-keepattributes Annotation
+-keep @androidx.annotation.Keep class ** {
+    @androidx.annotation.Keep <fields>;
+    @androidx.annotation.Keep <methods>;
+}
+
+
+#不混淆View中的set***() 和 get***()方法 以保证属性动画正常工作  某个类中的某个方法不混淆
+#自定义View的set get方法 和 构造方法不混淆
+-keep public class * extends android.view.View{
+    *** get*();
+    void set*(***);
+    public <init>(android.content.Context);
+    public <init>(android.content.Context, android.util.AttributeSet);
+    public <init>(android.content.Context, android.util.AttributeSet, int);
+}
+-keepclasseswithmembers class * {
+    public <init>(android.content.Context, android.util.AttributeSet);
+    public <init>(android.content.Context, android.util.AttributeSet, int);
+}
+#这个主要是在layout 中写的onclick方法android:onclick="onClick"，不进行混淆
+-keepclassmembers class * extends android.app.Activity {
+   public void *(android.view.View);
+}
+
+#保持 Serializable 不被混淆
+#-keepnames class * implements java.io.Serializable
+#实现Serializable接口的类重写父类方法保留
+-keepclassmembers class * implements java.io.Serializable {
+    static final long serialVersionUID;
+    private static final java.io.ObjectStreamField[] serialPersistentFields;
+    private void writeObject(java.io.ObjectOutputStream);
+    private void readObject(java.io.ObjectInputStream);
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
+}
+# 保留R文件中所有静态字段，以保证正确找到每个资源的ID
+#-keep class **.R$* {
+#    public static <fields>;
+#}
+
+-keepclassmembers class * {
+    void *(*Event);
+}
+
+#保留枚举类中的values和valueOf方法
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+#保留Parcelable实现类中的Creator字段，以保证Parcelable机制正常工作
+-keep class * implements android.os.Parcelable {
+  public static final android.os.Parcelable$Creator *;
+}
+
+#不混淆包含native方法的类的类名以及native方法名
+-keepclasseswithmembernames class * {
+  native<methods>;
+}

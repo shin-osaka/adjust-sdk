@@ -1,0 +1,217 @@
+apply plugin: 'com.android.library'
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
+
+repositories {
+    maven {
+        url "https://s01.oss.sonatype.org/content/repositories/staging/"
+    }
+}
+
+android {
+    compileSdk rootProject.ext.coreCompileSdkVersion
+
+    publishing {
+        multipleVariants {
+            allVariants()
+            withJavadocJar()
+        }
+    }
+
+    defaultConfig {
+        minSdkVersion rootProject.ext.coreMinSdkVersion
+        targetSdkVersion rootProject.ext.coreTargetSdkVersion
+    }
+    namespace 'com.osaka.sdk.xiaomi'
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    // Add SDK via module.
+    compileOnly project(':sdk-core')
+    // Add SDK via Maven.
+    // implementation 'io.github.shin-osaka:adjust-android:4.38.4.5'
+
+    // Add xiaomi referrer lib via Maven.
+    implementation 'com.miui.referrer:homereferrer:1.0.0.6'
+}
+
+// read local properties
+File localPropsFile = project.rootProject.file('local.properties')
+if (localPropsFile.exists()) {
+    Properties p = new Properties()
+    new FileInputStream(localPropsFile).withCloseable { is ->
+        p.load(is)
+    }
+    p.each { name, value ->
+        ext[name] = value
+    }
+}
+
+task adjustXiaomiReferrerPluginAar(type: Copy) {
+    dependsOn 'assembleRelease'
+
+    from('build/outputs/aar/')
+    include 'sdk-plugin-xiaomi-referrer-release.aar'
+    destinationDir file('build/libs/')
+    rename 'sdk-plugin-xiaomi-referrer-release.aar', "${project.name}.aar"
+
+}
+
+task adjustXiaomiReferrerPluginJar(type: Jar) {
+    dependsOn 'packageReleaseAssets'
+    dependsOn 'compileReleaseJavaWithJavac'
+
+    from('build/intermediates/library_assets/release/packageReleaseAssets/out/') {
+        into('assets')
+    }
+    from('build/intermediates/javac/release/classes/')
+
+    archiveFileName = project.provider { "${project.name}.jar" }
+}
+
+task adjustXiaomiReferrerPluginSourcesJar(type: Jar) {
+    setArchiveClassifier('sources')
+    from android.sourceSets.main.java.srcDirs
+}
+
+artifacts {
+    archives adjustXiaomiReferrerPluginJar
+    archives adjustXiaomiReferrerPluginSourcesJar
+}
+afterEvaluate {
+    publishing {
+        publications {
+/*
+            mavenAndroidXiaomiReferrerJar(MavenPublication) {
+                customizePomForJar(pom)
+                groupId rootProject.ext.adjustGroupId
+                artifactId 'adjust-android-xiaomi-referrer'
+                version rootProject.ext.coreVersionName
+
+                artifact adjustXiaomiReferrerPluginJar
+                artifact adjustXiaomiReferrerPluginSourcesJar
+            }
+*/
+            mavenAndroidXiaomiReferrerAar(MavenPublication) {
+                customizePomForAar(pom)
+                groupId rootProject.ext.adjustGroupId
+                artifactId 'adjust-android-xiaomi-referrer'
+                version rootProject.ext.coreVersionName
+
+                artifact("$buildDir/outputs/aar/sdk-plugin-xiaomi-referrer-release.aar") {
+                    builtBy tasks.getByPath("adjustXiaomiReferrerPluginAar")
+                }
+                artifact adjustXiaomiReferrerPluginSourcesJar
+            }
+        }
+
+        repositories {
+            maven {
+                url "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2"
+                if (project.hasProperty("sonatypeUsername")) {
+                    credentials {
+                        username sonatypeUsername
+                        password sonatypePassword
+                    }
+                }
+            }
+        }
+    }
+    signing {
+//        sign publishing.publications.mavenAndroidXiaomiReferrerJar
+        sign publishing.publications.mavenAndroidXiaomiReferrerAar
+    }
+}
+
+def customizePomForJar(pom) {
+    pom.withXml {
+        def root = asNode()
+
+        // Add all items necessary for maven central publication.
+        root.children().last() + {
+            resolveStrategy = Closure.DELEGATE_FIRST
+            description 'The Xiaomi Referrer plugin for Adjust SDK for Android'
+            name 'Adjust Android SDK Xiaomi Referrer plugin'
+            url 'https://github.com/shin-osaka/adjust-sdk'
+
+            organization {
+                name 'shin-osaka'
+                url 'https://github.com/shin-osaka/adjust-sdk'
+            }
+            licenses {
+                license {
+                    name 'MIT License'
+                    url 'http://www.opensource.org/licenses/mit-license.php'
+                }
+            }
+            scm {
+                url 'git@github.com:shin-osaka/adjust-sdk.git'
+                connection 'scm:git:git@github.com:shin-osaka/adjust-sdk.git'
+                developerConnection 'scm:git:git@github.com:shin-osaka/adjust-sdk.git'
+            }
+            developers {
+                developer {
+                    name 'Barney'
+                    email 'Barney.P@spirit-studio.co'
+                }
+            }
+        }
+    }
+}
+
+def customizePomForAar(pom) {
+    pom.withXml {
+        def root = asNode()
+
+        // Add all items necessary for maven central publication.
+        root.children().last() + {
+            resolveStrategy = Closure.DELEGATE_FIRST
+            description 'The Xiaomi Referrer plugin for Adjust SDK for Android'
+            name 'Adjust Android SDK Xiaomi Referrer plugin'
+            url 'https://github.com/shin-osaka/adjust-sdk'
+
+            organization {
+                name 'shin-osaka'
+                url 'https://github.com/shin-osaka/adjust-sdk'
+            }
+            licenses {
+                license {
+                    name 'MIT License'
+                    url 'http://www.opensource.org/licenses/mit-license.php'
+                }
+            }
+            scm {
+                url 'git@github.com:shin-osaka/adjust-sdk.git'
+                connection 'scm:git:git@github.com:shin-osaka/adjust-sdk.git'
+                developerConnection 'scm:git:git@github.com:shin-osaka/adjust-sdk.git'
+            }
+            developers {
+                developer {
+                    name 'Barney'
+                    email 'Barney.P@spirit-studio.co'
+                }
+            }
+        }
+    }
+}
+
+model {
+//    tasks.generatePomFileForMavenAndroidXiaomiReferrerJarPublication {
+//        destination = file("${project.buildDir}/generated-pom.xml")
+//    }
+    /* TODO check if/how to replace this tasks
+    tasks.publishMavenAndroidXiaomiReferrerPublicationToMavenLocal {
+        dependsOn project.tasks.signArchives
+    }
+    tasks.publishMavenAndroidXiaomiReferrerPublicationToMavenRepository {
+        dependsOn project.tasks.signArchives
+    }
+    */
+    tasks.generatePomFileForMavenAndroidXiaomiReferrerAarPublication {
+        destination = file("${project.buildDir}/generated-pom.xml")
+    }
+}
+
+

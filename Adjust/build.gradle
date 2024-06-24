@@ -1,0 +1,88 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+    ext.kotlin_version = '1.7.10'
+
+    repositories {
+        mavenCentral()
+        google()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.1.4'
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files.
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version" }
+}
+
+plugins {
+    id("com.gradleup.nmcp").version("0.0.8")
+}
+
+// read local properties
+File localPropsFile = project.rootProject.file('local.properties')
+if (localPropsFile.exists()) {
+    Properties p = new Properties()
+    new FileInputStream(localPropsFile).withCloseable { is ->
+        p.load(is)
+    }
+    p.each { name, value ->
+        ext[name] = value
+    }
+}
+
+// common in all sub-projects
+subprojects {
+}
+
+ext {
+    // Android config.
+    coreMinSdkVersion = 9
+    coreCompileSdkVersion = 34
+    coreTargetSdkVersion = 34
+    coreVersionName = '4.38.4.5'
+    defaultVersionCode = 1
+    webbridgeMinSdkVersion = 17
+    samsungReferrerMinSdkVersion = 18
+    vivoReferrerMinSdkVersion = 23
+    samsungCloudDevMinSdkVersion = 23
+
+    // POM.
+    adjustGroupId = 'io.github.shin-osaka'
+}
+
+allprojects {
+    repositories {
+        mavenCentral()
+        google()
+    }
+    gradle.projectsEvaluated {
+        tasks.withType(JavaCompile) {
+            options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+        }
+    }
+}
+
+nmcp {
+    publishAllProjectsProbablyBreakingProjectIsolation {
+        username = sonatypeUsername
+        password = sonatypePassword
+        // publish manually from the portal
+        publicationType = "USER_MANAGED"
+        // or if you want to publish automatically
+        //publicationType = "AUTOMATIC"
+    }
+}
+
+//nmcp {
+//    publishAggregation {
+//        project(":sdk-core")
+//
+//        username = "WADNzVYX"
+//        password = "IfGkR66TN6vloNdj4A3wVAVQU8RHHBxRJsuvNvhI4uJz"
+//        // publish manually from the portal
+//        publicationType = "USER_MANAGED"
+//        // or if you want to publish automatically
+//        //publicationType = "AUTOMATIC"
+//    }
+//}
